@@ -72,6 +72,7 @@ import com.mobius.software.common.dal.timers.TaskCallback;
 import com.mobius.software.common.dal.timers.WorkerPool;
 import com.mobius.software.telco.protocols.ss7.asn.ASNParser;
 import com.mobius.software.telco.protocols.ss7.asn.exceptions.ASNException;
+import com.mobius.software.telco.protocols.ss7.common.MessageCallback;
 
 import io.netty.buffer.ByteBuf;
 
@@ -473,7 +474,8 @@ public class DialogImpl implements Dialog {
 		this.setState(TRPseudoState.InitialSent);
 
 		this.provider.send(this, buffer, event.getReturnMessageOnError(), this.remoteAddress, this.localAddress,
-				this.seqControl, this.getNetworkId(), this.localSsn, callback);
+				this.seqControl, this.getNetworkId(), this.localSsn,
+				getMessageCallback(callback));
 		this.scheduledComponentList.clear();
 	}
 
@@ -534,7 +536,8 @@ public class DialogImpl implements Dialog {
 
 			provider.getStack().newMessageSent(tcbm.getName(), buffer.readableBytes(), this.getNetworkId());
 			this.provider.send(this, buffer, event.getReturnMessageOnError(), this.remoteAddress, this.localAddress,
-					this.seqControl, this.getNetworkId(), this.localSsn, callback);
+					this.seqControl, this.getNetworkId(), this.localSsn,
+					getMessageCallback(callback));
 			this.setState(TRPseudoState.Active);
 			this.scheduledComponentList.clear();
 
@@ -567,7 +570,8 @@ public class DialogImpl implements Dialog {
 
 			provider.getStack().newMessageSent(tcbm.getName(), buffer.readableBytes(), this.getNetworkId());
 			this.provider.send(this, buffer, event.getReturnMessageOnError(), this.remoteAddress, this.localAddress,
-					this.seqControl, this.getNetworkId(), this.localSsn, callback);
+					this.seqControl, this.getNetworkId(), this.localSsn,
+					getMessageCallback(callback));
 			this.scheduledComponentList.clear();
 		} else
 			callback.onError(new TCAPSendException("Wrong state: " + this.state));
@@ -651,7 +655,8 @@ public class DialogImpl implements Dialog {
 		}
 		provider.getStack().newMessageSent(tcbm.getName(), buffer.readableBytes(), this.getNetworkId());
 		this.provider.send(this, buffer, event.getReturnMessageOnError(), this.remoteAddress, this.localAddress,
-				this.seqControl, this.getNetworkId(), this.localSsn, callback);
+				this.seqControl, this.getNetworkId(), this.localSsn,
+				getMessageCallback(callback));
 
 		this.scheduledComponentList.clear();
 		release();
@@ -703,7 +708,8 @@ public class DialogImpl implements Dialog {
 		}
 		provider.getStack().newMessageSent(msg.getName(), buffer.readableBytes(), this.getNetworkId());
 		this.provider.send(this, buffer, event.getReturnMessageOnError(), this.remoteAddress, this.localAddress,
-				this.seqControl, this.getNetworkId(), this.localSsn, callback);
+				this.seqControl, this.getNetworkId(), this.localSsn,
+				getMessageCallback(callback));
 		this.scheduledComponentList.clear();
 		release();
 	}
@@ -751,7 +757,8 @@ public class DialogImpl implements Dialog {
 
 				provider.getStack().newMessageSent(msg.getName(), buffer.readableBytes(), this.getNetworkId());
 				this.provider.send(this, buffer, event.getReturnMessageOnError(), this.remoteAddress, this.localAddress,
-						this.seqControl, this.getNetworkId(), this.localSsn, callback);
+						this.seqControl, this.getNetworkId(), this.localSsn,
+						getMessageCallback(callback));
 
 				this.scheduledComponentList.clear();
 				release();
@@ -1273,11 +1280,11 @@ public class DialogImpl implements Dialog {
 			if (this.getProtocolVersion() != null)
 				this.provider.sendProviderAbort(PAbortCause.InconsistentDialoguePortion,
 						Utils.encodeTransactionId(this.remoteTransactionIdObject, this.isSwapTcapIdBytes),
-						remoteAddress, localAddress, seqControl, this.getNetworkId(), dummyCallback);
+						remoteAddress, localAddress, seqControl, this.getNetworkId(), MessageCallback.EMPTY);
 			else
 				this.provider.sendRejectAsProviderAbort(PAbortCause.InconsistentDialoguePortion,
 						Utils.encodeTransactionId(this.remoteTransactionIdObject, this.isSwapTcapIdBytes),
-						remoteAddress, localAddress, seqControl, this.getNetworkId(), dummyCallback);
+						remoteAddress, localAddress, seqControl, this.getNetworkId(), MessageCallback.EMPTY);
 
 			// sending to the local side
 			tcAbortIndication = this.provider.getDialogPrimitiveFactory().createPAbortIndication(this);
@@ -1580,6 +1587,20 @@ public class DialogImpl implements Dialog {
 	@Override
 	public void setUserObject(Object userObject) {
 		this.userObject = userObject;
+	}
+
+	private <T extends Exception> MessageCallback<T> getMessageCallback(TaskCallback<T> callback) {
+		return new MessageCallback<T>() {
+			@Override
+			public void onSuccess(String aspName) {
+				callback.onSuccess();
+			}
+
+			@Override
+			public void onError(T ex) {
+				callback.onError(ex);
+			}
+		};
 	}
 
 	/*
