@@ -147,16 +147,6 @@ public class DialogImpl implements Dialog {
 
 	private ASNParser dialogParser;
 
-	private TaskCallback<Exception> dummyCallback = new TaskCallback<Exception>() {
-		@Override
-		public void onSuccess() {
-		}
-
-		@Override
-		public void onError(Exception exception) {
-		}
-	};
-
 	private static int getIndexFromInvokeId(Long l) {
 		int tmp = l.intValue();
 		return tmp + _INVOKE_TABLE_SHIFT;
@@ -1589,15 +1579,15 @@ public class DialogImpl implements Dialog {
 		this.userObject = userObject;
 	}
 
-	private <T extends Exception> MessageCallback<T> getMessageCallback(TaskCallback<T> callback) {
-		return new MessageCallback<T>() {
+	private MessageCallback<Exception> getMessageCallback(TaskCallback<Exception> callback) {
+		return new MessageCallback<Exception>() {
 			@Override
 			public void onSuccess(String aspName) {
 				callback.onSuccess();
 			}
 
 			@Override
-			public void onError(T ex) {
+			public void onError(Exception ex) {
 				callback.onError(ex);
 			}
 		};

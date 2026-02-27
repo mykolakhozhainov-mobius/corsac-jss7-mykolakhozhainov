@@ -620,8 +620,7 @@ public class DialogImpl implements Dialog {
 
 						@Override
 						public void onSuccess(String aspName) {
-							List<InvokeWrapper> wrappers = getInvokesForMessage(tcbm);
-							for (InvokeWrapper wrapper : wrappers)
+							for (InvokeWrapper wrapper : getInvokesForMessage(tcbm))
 								wrapper.setAspName(aspName);
 
 							callback.onSuccess();
@@ -2153,9 +2152,9 @@ public class DialogImpl implements Dialog {
 		return this.startDialogTime;
 	}
 
-	private <T extends Exception> MessageCallback<T> getMessageCallback(TaskCallback<T> callback,
+	private MessageCallback<Exception> getMessageCallback(TaskCallback<Exception> callback,
 			List<InvokeWrapper> wrappers) {
-		return new MessageCallback<T>() {
+		return new MessageCallback<Exception>() {
 			@Override
 			public void onSuccess(String aspName) {
 				if (wrappers != null)
@@ -2166,7 +2165,7 @@ public class DialogImpl implements Dialog {
 			}
 
 			@Override
-			public void onError(T ex) {
+			public void onError(Exception ex) {
 				callback.onError(ex);
 			}
 		};
